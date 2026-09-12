@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Leads</title>
+
+    <style>
+
+        body {
+            font-family: Arial, sans-serif;
+            padding: 30px;
+            background: #f5f5f5;
+        }
+
+        h1 {
+            margin-bottom: 25px;
+        }
+
+        #leadsContainer {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .lead-card {
+
+            background: white;
+
+            padding: 20px;
+
+            border-radius: 10px;
+
+            box-shadow:
+                0 2px 8px rgba(0,0,0,0.1);
+
+        }
+
+        .lead-card h3 {
+            margin-top: 0;
+        }
+
+        .field {
+            margin: 6px 0;
+        }
+
+        .field strong {
+            display: inline-block;
+            width: 130px;
+        }
+
+        #status {
+
+            margin-bottom: 20px;
+
+            padding: 10px;
+
+            background: #ddd;
+
+            border-radius: 6px;
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+    <h1>
+        Here Are The Leads
+    </h1>
+
+
+    <div id="status">
+        Connecting...
+    </div>
+
+
+    <div id="leadsContainer">
+
+        <% leads.forEach(lead => { %>
+
+            <div class="lead-card">
+
+                <h3>
+                    Lead ID:
+                    <%= lead.id %>
+                </h3>
+
+                <p>
+                    Created:
+                    <%= lead.created_time %>
+                </p>
+
+                <% (lead.field_data || []).forEach(field => { %>
+
+                    <div class="field">
+
+                        <strong>
+                            <%= field.name %>:
+                        </strong>
+
+                        <span>
+                            <%= field.values?.join(", ") %>
+                        </span>
+
+                    </div>
+
+                <% }) %>
+
+            </div>
+
+        <% }) %>
+
+    </div>
+
+
+    <!-- Socket.IO -->
+
+    <script src="/socket.io/socket.io.js"></script>
+
+
+    <script>
+
+        const socket = io();
+
+
+        // ==========================
+        // CONNECTION
+        // ==========================
+
+        socket.on("connect", () => {
+
+            console.log(
+                "Connected to server:",
+                socket.id
+            );
+
+            document.getElementById(
+                "status"
+            ).innerText =
+                "🟢 Real-time connection active";
+
+        });
+
+
+        // ==========================
+        // NEW LEAD
+        // ==========================
+
+        socket.on("newLead", (lead) => {
+
+            console.log(
+                "🔥 New lead received:",
+                lead
+            );
+
+
+            const container =
+                document.getElementById(
+                    "leadsContainer"
+                );
+
+
+            const card =
+                document.createElement("div");
+
+            card.className =
+                "lead-card";
+
+
+            let html = `
+
+                <h3>
+                    Lead ID: ${lead.id}
+                </h3>
+
+                <p>
+                    Created: ${lead.created_time}
+                </p>
+
+            `;
+
+
+            for (
+                const field
+                of lead.field_data || []
+            ) {
+
+                const value =
+                    field.values?.join(", ") || "";
+
+
+                html += `
+
+                    <div class="field">
+
+                        <strong>
+                            ${field.name}:
+                        </strong>
+
+                        <span>
+                            ${value}
+                        </span>
+
+                    </div>
+
+                `;
+
+            }
+
+
+            card.innerHTML = html;
+
+
+            // Newest lead on top
+            container.prepend(card);
+
+        });
+
+
+        // ==========================
+        // DISCONNECT
+        // ==========================
+
+        socket.on("disconnect", () => {
+
+            document.getElementById(
+                "status"
+            ).innerText =
+                "🔴 Real-time connection lost";
+
+        });
+
+    </script>
+
+
+</body>
+
+</html>
